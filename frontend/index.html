@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Online_Tag_Game</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0;
+            overflow: hidden; 
+            background: #1a1a1a; 
+            font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; 
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            color: #333;
+        }
+
+        canvas { display: block; }
+
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 200;
+        }
+        .active { display: flex; } 
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 25px;
+            border-radius: 18px;
+            text-align: center;
+            max-width: 400px;
+            width: 85%;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+        }
+
+        .panel h1, .panel h2 { margin-top: 0; color: #2c3e50; }
+        
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: center;
+        }
+        input[type="text"] { width: 80%; margin-bottom: 15px; }
+
+        .action-btn { 
+            padding: 12px 24px; 
+            background: #e74c3c; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #c0392b;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .action-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #c0392b; }
+
+        table { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; }
+        th { background: #ecf0f1; }
+
+        .setup-group { 
+            display: flex;
+            justify-content: space-around; 
+            margin: 15px 0; 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 10px; 
+        }
+        .input-group { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        .input-group label { 
+            font-size: 11px; 
+            color: #7f8c8d; 
+            margin-bottom: 4px; 
+            font-weight: bold; 
+        }
+        .input-group input { 
+            width: 50px; 
+            height: 30px; 
+        }
+        
+        #playerList { 
+            text-align: left; 
+            background: #ecf0f1; 
+            padding: 10px; 
+            border-radius: 8px; 
+            max-height: 150px; 
+            overflow-y: auto; 
+            font-size: 15px; 
+            margin-bottom: 10px;
+        }
+
+        #ui {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: env(safe-area-inset-top, 10px) 15px 0;
+            box-sizing: border-box; pointer-events: none; z-index: 100;
+            display: none;
+        }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0, 0, 0, 0.85); color: #fff;
+            padding: 10px 18px; border-radius: 30px;
+            font-size: 14px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); pointer-events: auto;
+        }
+
+        #timer { color: #f1c40f; }
+
+        #legend {
+            margin-top: 10px; background: rgba(0, 0, 0, 0.75); color: #fff;
+            padding: 8px 12px; border-radius: 12px; font-size: 12px;
+            max-width: 220px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.1);
+        }
+        #legend summary { outline: none; cursor: pointer; font-weight: bold; list-style: none; }
+        .legend-content { margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 5px; }
+        .item { display: flex; align-items: center; margin-bottom: 4px; }
+        .chip { width: 12px; height: 12px; margin-right: 8px; border-radius: 2px; }
+
+        #npcModal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 300; width: 80%; max-width: 300px; text-align: center; }
+        .btn-group { display: flex; justify-content: space-between; margin-top: 15px; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="homeScreen" class="screen active">
+        <div class="panel">
+            <h1>Online_Tag_Game</h1>
+            <input type="text" id="playerName" placeholder="プレイヤー名を入力" value="ゲスト">
+            
+            <input type="text" id="roomId" placeholder="部屋ID (空なら新規作成)">
+            
+            <button id="joinBtn" class="action-btn">ゲームに参加 / 部屋を作る</button>
+            
+            <h3 style="margin-top: 25px; margin-bottom: 5px; color: #7f8c8d; font-size: 14px;">👑 総合ランキング</h3>
+            <table>
+                <thead><tr><th>順位</th><th>名前</th><th>ポイント</th></tr></thead>
+                <tbody id="rankingBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="lobbyScreen" class="screen">
+        <div class="panel">
+            <h2 id="lobbyTitle">待機室</h2>
+            <div id="playerList"></div>
+            
+            <div class="setup-group">
+                <div class="input-group">
+                    <label>募集人数</label>
+                    <input type="number" id="lobbyTarget" value="5" min="2" max="10">
+                </div>
+                <div class="input-group">
+                    <label>TIME(秒)</label>
+                    <input type="number" id="lobbyDuration" value="60">
+                </div>
+                <div class="input-group">
+                    <label>TRAPS(個)</label>
+                    <input type="number" id="lobbyTraps" value="50">
+                </div>
+            </div>
+            
+            <button id="readyBtn" class="action-btn" style="background: #27ae60; box-shadow: 0 3px 0 #2ecc71;">全員準備完了でスタート</button>
+        </div>
+    </div>
+           
+    <div id="npcModal">
+        <h3 style="margin-top:0;">人数不足</h3>
+        <p>募集人数に満たないため、NPCを <strong><span id="npcCountStr"></span></strong> 人加えてスタートしますか？</p>
+        
+        <p id="npcStatusStr" style="font-weight: bold; color: #e67e22;"></p>
+        
+        <div class="btn-group">
+            <button id="npcYesBtn" class="action-btn" style="background: #3498db; margin-top:0;">はい</button>
+            <button id="npcNoBtn" class="action-btn" style="background: #95a5a6; margin-top:0;">待つ (キャンセル)</button>
+        </div>
+    </div>
+
+    <div id="resultScreen" class="screen">
+        <div class="panel">
+            <h1 id="resultTitle">終了！</h1>
+            
+            <div style="max-height: 250px; overflow-y: auto; margin: 15px 0; border: 1px solid #bdc3c7; border-radius: 8px;">
+                <table style="margin-top: 0; font-size: 14px; width: 100%;">
+                    <thead style="position: sticky; top: 0; background: #ecf0f1; z-index: 10;">
+                        <tr><th>結果</th><th>名前</th><th>pt変動</th></tr>
+                    </thead>
+                    <tbody id="matchResultBody"></tbody>
+                </table>
+            </div>
+
+            <button id="backHomeBtn" class="action-btn">ホームへ戻る</button>
+        </div>
+    </div>
+
+    <div id="ui">
+        <div class="header">
+            <span id="status">サーバー接続中...</span>
+            <span id="timer">残り: --s</span>
+        </div>
+        
+        <details id="legend">
+            <summary>🎮 操作説明・凡例 (タップ)</summary>
+            <div class="legend-content">
+                <div class="item"><span class="chip" style="background:#ff4444"></span> 鬼：他プレイヤーに触れろ</div>
+                <div class="item"><span class="chip" style="background:#4444ff"></span> 逃：終了まで逃げ切れ</div>
+                <div class="item"><span class="chip" style="background:#777"></span> 壁：通行不可の障害物</div>
+                <div class="item" style="color:#f1c40f;">★ 拘束罠:5秒間移動停止</div>
+                <div class="item" style="color:#a29bfe;">🌀 暗転罠:視界が限定</div>
+            </div>
+        </details>
+    </div>
+
+    <canvas id="game"></canvas>
+    
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
