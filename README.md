@@ -243,7 +243,7 @@ scale = Math.min(screenWidth, screenHeight) / 1000
 
 以下は暗転罠にかかった時の視界である
 <div align="center">
-  <img src="images/trap.png" width="220" alt="暗転罠の画面">
+  <img src="images/trap.jpg" width="220" alt="暗転罠の画面">
 </div>
 
 ### 3-6. 障害物
